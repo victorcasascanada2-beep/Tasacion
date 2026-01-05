@@ -2,51 +2,47 @@ import streamlit as st
 import google.generativeai as genai
 from PIL import Image
 
-# Configuración de la App
-st.set_page_config(page_title="Tasador Tractor Pro", layout="centered")
-st.title("🚜 Tasador Experto")
+st.set_page_config(page_title="Tasador Pro 2026", layout="centered")
+st.title("🚜 Tasador Alta Potencia (Gemini Pro)")
 
-# Barra lateral para la clave
-api_key = st.sidebar.text_input("Pega tu API Key", type="password")
+# Barra lateral para tu API Key
+api_key = st.sidebar.text_input("Introduce tu API Key", type="password")
 
 if api_key:
     try:
         genai.configure(api_key=api_key)
         
-        # CAMBIO CLAVE: Usamos el nombre del modelo sin versiones extra
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        # Al tener cuenta Pro, usamos gemini-1.5-pro que es más inteligente
+        # Eliminamos el sufijo -latest para evitar el error 404
+        model = genai.GenerativeModel('gemini-1.5-pro')
 
-        with st.form("tasacion_unica"):
+        with st.form("formulario_tasacion"):
             st.subheader("Datos Obligatorios *")
             modelo = st.text_input("Marca y Modelo *")
-            horas = st.number_input("Horas de motor *", min_value=0)
-            estado = st.text_area("Descripción de averías *")
+            horas = st.number_input("Horas *", min_value=0)
+            estado = st.text_area("Estado y Averías *")
             
-            # Solo una foto para evitar fallos de memoria
+            # Una sola foto para máxima estabilidad
             foto = st.file_uploader("Sube la foto principal *", type=['jpg', 'jpeg', 'png'])
             
             if foto:
-                st.image(Image.open(foto), width=250)
+                st.image(Image.open(foto), width=300)
 
-            submit = st.form_submit_button("GENERAR VALORACIÓN")
+            submit = st.form_submit_button("🚀 TASAR CON GEMINI PRO")
 
         if submit:
             if not (modelo and estado and foto):
-                st.error("⚠️ Rellena todos los campos y sube la foto.")
+                st.error("⚠️ Faltan datos o la foto.")
             else:
-                with st.spinner("La IA está tasando..."):
+                with st.spinner("Gemini Pro está analizando..."):
                     img = Image.open(foto)
-                    # Tu regla: 10.000€ y 100 horas
-                    prompt = f"""
-                    Actúa como tasador experto agrícola. Analiza: {modelo}, {horas}h, {estado}. 
-                    REGLA ORO: Si hay averías graves, resta 10.000€ y 100h de mano de obra al valor.
-                    Da un precio para el mercado de 2026.
-                    """
+                    # Tu regla de los 10.000€ y 100h
+                    prompt = f"Tasador experto. Analiza: {modelo}, {horas}h, {estado}. REGLA: Si hay averías, resta 10.000€ y 100h de taller. Precio mercado 2026."
                     response = model.generate_content([prompt, img])
                     st.success("✅ Tasación Completada")
-                    st.markdown(response.text)
+                    st.write(response.text)
 
     except Exception as e:
-        st.error(f"Error: {e}")
+        st.error(f"Error de conexión: {e}")
 else:
-    st.warning("Escribe la API Key a la izquierda.")
+    st.warning("Escribe tu clave en la barra lateral.")
