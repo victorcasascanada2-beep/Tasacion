@@ -1,52 +1,48 @@
-import streamlit as st
-from google import genai
-import PIL.Image
+import google.generativeai as genai
+import typing_extensions as typing
 
-st.set_page_config(page_title="Tasador Pro 2026", layout="centered")
-st.title("🚜 Tasador Alta Potencia")
+# Configuración de la API
+genai.configure(api_key="TU_API_KEY")
 
-# Campo para la API Key
-api_key = st.sidebar.text_input("Introduce tu Gemini API Key", type="password")
+# Definimos la estructura obligatoria de la tasación
+class TasacionMaquinaria(typing.TypedDict):
+    marca_modelo: str
+    estado_general: str  # (Excelente, Bueno, Regular, Desgastado)
+    valor_estimado_euros: int
+    justificacion_precio: str
+    reparaciones_detectadas: list[str]
+    campos_completos: bool # Para verificar obligatoriedad
 
-if api_key:
-    try:
-        # Forzamos el uso de la API v1 (estable), no la v1beta
-        client = genai.Client(api_key=api_key, http_options={'api_version': 'v1'})
-        
-        with st.form("tasacion_form"):
-            st.subheader("Datos Mandatorios *")
-            modelo = st.text_input("Marca y Modelo *")
-            horas = st.number_input("Horas de motor *", min_value=0)
-            estado = st.text_area("Descripción de averías *")
-            
-            foto = st.file_uploader("Sube la foto del tractor *", type=['jpg', 'jpeg', 'png'])
-            
-            if foto:
-                st.image(PIL.Image.open(foto), width=250)
+# Inicializamos el modelo con la configuración de salida
+model = genai.GenerativeModel(
+    model_name="gemini-1.5-flash", # O gemini-2.0-flash si ya está disponible en tu región
+    generation_config={
+        "response_mime_type": "application/json",
+        "response_schema": TasacionMaquinaria
+    }
+)
 
-            submit = st.form_submit_button("GENERAR TASACIÓN")
+# Definimos la lógica de tasación
+def tasar_maquinaria(ruta_imagen, horas_reparacion, coste_reparacion):
+    # Cargamos la imagen (previamente guardada para la vista previa)
+    foto_tractor = genai.upload_file(path=ruta_imagen)
+    
+    prompt = f"""
+    Analiza la imagen de este tractor y tásalo profesionalmente. 
+    Datos conocidos: 
+    - Se le han invertido {horas_reparacion} horas de trabajo técnico.
+    - El coste de las piezas y reparaciones recientes asciende a {coste_reparacion} euros.
+    
+    INSTRUCCIONES:
+    1. Identifica marca y modelo si es visible.
+    2. Evalúa el estado exterior a partir de la foto.
+    3. Suma el valor de la inversión de {coste_reparacion}€ al valor base de mercado.
+    4. Todos los campos del JSON son OBLIGATORIOS.
+    """
+    
+    response = model.generate_content([prompt, foto_tractor])
+    return response.text
 
-        if submit:
-            if not (modelo and estado and foto):
-                st.error("⚠️ Error: Rellena todos los campos y sube la foto.")
-            else:
-                with st.spinner("Gemini Pro analizando..."):
-                    img = PIL.Image.open(foto)
-                    
-                    # Tu lógica de 10.000€ y 100h
-                    prompt = f"Tasador experto. Analiza: {modelo}, {horas}h, {estado}. REGLA: Si hay averías, resta 10.000€ y 100h de taller. Precio 2026."
-                    
-                    # Usamos el modelo estable
-                    response = client.models.generate_content(
-                        model="gemini-1.5-flash",
-                        contents=[prompt, img]
-                    )
-                    
-                    st.success("✅ Tasación Completada")
-                    st.markdown(response.text)
-                    
-    except Exception as e:
-        st.error(f"Error técnico: {e}")
-        st.info("Si el error 404 persiste, entra en Google Cloud Console y asegúrate de que el proyecto seleccionado coincide con tu API Key.")
-else:
-    st.warning("Escribe tu clave API en la barra lateral.")
+# Ejemplo de uso
+# resultado = tasar_maquinaria("tractor_front.jpg", 100, 10000)
+# print(resultado)
