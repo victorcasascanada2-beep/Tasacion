@@ -34,7 +34,7 @@ if submit_button:
     else:
         with st.spinner("Analizando con Gemini 2.5 Flash..."):
             try:
-                model = genai.GenerativeModel('gemini-1.5-flash')
+                model = genai.GenerativeModel('gemini-2.5-flash')
                 img = Image.open(foto)
                 
                 prompt = f"""
