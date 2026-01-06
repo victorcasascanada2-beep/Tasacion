@@ -5,7 +5,7 @@ from PIL import Image
 # Configuración API
 genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 
-st.title("🚜 Tasador Rápido: Mercado Europeo")
+st.title("🚜 Tasador Agricola Noroeste: VCasas Mercado Europeo")
 
 # Cuadro de texto único
 datos_maquina = st.text_area("Detalles (Marca, Modelo, Extras, Estado...)*", height=150)
