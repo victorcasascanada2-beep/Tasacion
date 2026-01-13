@@ -1,15 +1,18 @@
 import streamlit as st
-import os
+import importlib.util
+import sys
 
-# 1. Nombre del archivo que quieres arrancar (CON el .py esta vez)
-VERSION_ACTIVA = "VersionExperta2_0.py" 
+# 1. Nombre del archivo (SIN el .py)
+VERSION_ACTIVA = "VersionExperta2_0" 
 
-def lanzar_version(archivo):
-    if os.path.exists(archivo):
-        # Este comando lee el archivo y lo ejecuta directamente
-        exec(open(archivo, encoding="utf-8").read(), globals())
-    else:
-        st.error(f"No encuentro el archivo {archivo} en GitHub")
+def cargar_modulo(nombre_archivo):
+    spec = importlib.util.spec_from_file_location(nombre_archivo, f"{nombre_archivo}.py")
+    modulo = importlib.util.module_from_spec(spec)
+    sys.modules[nombre_archivo] = modulo
+    spec.loader.exec_module(modulo)
 
-# Ejecutamos
-lanzar_version(VERSION_ACTIVA)
+try:
+    cargar_modulo(VERSION_ACTIVA)
+except Exception as e:
+    st.error(f"Error cargando la aplicación: {e}")
+    st.info("Asegúrate de que el archivo VersionExperta2_0.py existe en GitHub.")
