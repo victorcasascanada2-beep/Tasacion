@@ -60,7 +60,7 @@ def main():
 
             try:
                 # Usamos el modelo flash que es más rápido para peritajes
-                model = genai.GenerativeModel('gemini-1.5-flash')
+                model = genai.GenerativeModel('gemini-2.5-flash')
                 
                 # Preparamos las notas de las fotos
                 notas_texto = ""
