@@ -9,7 +9,83 @@ genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 
 
 # --- ESTILO CSS PARA LIMPIAR INTERFAZ ---
-st.markdown("""
+st.markdown("""import streamlit as st
+import google.generativeai as genai
+from PIL import Image
+import time
+
+def main():
+    # Configuración de la API
+    if "GOOGLE_API_KEY" not in st.secrets:
+        st.error("Falta la clave GOOGLE_API_KEY en los Secrets de Streamlit")
+        return
+
+    genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
+
+    st.title("🚜 Peritaje Profesional V2.0")
+
+    # --- DATOS OBLIGATORIOS ---
+    with st.expander("📝 Datos de la Máquina", expanded=True):
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            marca = st.text_input("Marca*")
+        with col2:
+            modelo = st.text_input("Modelo*")
+        with col3:
+            anio = st.text_input("Año*")
+        
+        observaciones = st.text_area("Incidencias y Extras (Pala, averías, pintura...)")
+
+    # --- FOTOS ---
+    st.subheader("📸 Fotos (5 a 10)")
+    fotos_subidas = st.file_uploader("Subir imágenes", type=['jpg', 'png', 'jpeg'], accept_multiple_files=True)
+
+    comentarios = []
+    if fotos_subidas:
+        for i, foto in enumerate(fotos_subidas[:10]):
+            c1, c2 = st.columns([1, 3])
+            c1.image(foto, width=100)
+            txt = c2.text_area(f"Nota foto {i+1} (máx 4 líneas)", key=f"n_{i}", height=70)
+            comentarios.append(txt)
+
+    # --- BOTÓN Y LÓGICA ---
+    if st.button("🚀 REALIZAR TASACIÓN"):
+        if not (marca and modelo and anio):
+            st.warning("Marca, Modelo y Año son obligatorios.")
+        elif len(fotos_subidas) < 5:
+            st.warning("Sube al menos 5 fotos.")
+        else:
+            bar = st.progress(0)
+            msg = st.empty()
+            for p in range(100):
+                time.sleep(0.02)
+                bar.progress(p + 1)
+                if p == 20: msg.text("Analizando fotos...")
+                if p == 50: msg.text("Buscando en mercado europeo...")
+                if p == 80: msg.text("Calculando precio de compra...")
+
+            try:
+                model = genai.GenerativeModel('gemini-1.5-flash')
+                texto_fotos = "\n".join([f"Foto {i+1}: {c}" for i, c in enumerate(comentarios)])
+                
+                prompt = f"""Tasador profesional. Máquina: {marca} {modelo} ({anio}). 
+                Observaciones: {observaciones}. Notas fotos: {texto_fotos}.
+                TAREA: 1. Extrae número serie. 2. Da PRECIO DE COMPRA (valor de captación para concesionario, tirando a la baja pero realista).
+                Se directo y breve."""
+
+                lista = [prompt]
+                for f in fotos_subidas:
+                    lista.append(Image.open(f))
+
+                res = model.generate_content(lista)
+                st.success("Peritaje Finalizado")
+                st.write(res.text)
+            except Exception as e:
+                st.error(f"Error: {e}")
+
+# Esto es lo que evita el parpadeo infinito
+if __name__ == "__main__":
+    main()
     <style>
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
