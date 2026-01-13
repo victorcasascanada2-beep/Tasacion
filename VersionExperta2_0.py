@@ -6,7 +6,7 @@ import time
 # Configuración de la API (Usa tu clave de siempre)
 genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 
-st.set_page_config(page_title="Tasador Experto V2", layout="centered")
+
 
 # --- ESTILO CSS PARA LIMPIAR INTERFAZ ---
 st.markdown("""
@@ -51,7 +51,7 @@ if fotos_subidas:
         for i, foto in enumerate(fotos_subidas):
             col_img, col_txt = st.columns([1, 2])
             with col_img:
-                st.image(foto, use_container_width=True)
+                st.image(foto, use_column_width=True)
             with col_txt:
                 comentarios[i] = st.text_area(
                     f"Nota para foto {i+1}", 
