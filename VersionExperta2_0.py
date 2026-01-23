@@ -3,6 +3,7 @@ import google.generativeai as genai
 from PIL import Image
 import base64
 from io import BytesIO
+import time  # <--- ERROR CORREGIDO: Importación necesaria para la fecha
 
 # --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(page_title="Tasador Pro - Agrícola Noroeste", layout="wide")
@@ -17,8 +18,11 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 1. Configuración de la API
-genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
+# 1. Configuración de la API (Asegúrate de tener la KEY en Secrets de Streamlit)
+try:
+    genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
+except Exception as e:
+    st.error("Configuración de API no encontrada. Verifica los Secrets.")
 
 # --- FUNCIÓN PARA GENERAR EL INFORME HTML ---
 def generar_html_informe(marca, modelo, anio, horas, observaciones, resultado_ia, fotos):
@@ -26,68 +30,77 @@ def generar_html_informe(marca, modelo, anio, horas, observaciones, resultado_ia
     fotos_html = ""
     for foto in fotos:
         try:
-            # Redimensionar para que el HTML no pese demasiado
+            # Redimensionar para que el HTML no pese demasiado y sea fluido
             img = Image.open(foto)
-            img.thumbnail((400, 400)) 
+            img.thumbnail((500, 500)) 
             buffered = BytesIO()
-            img.save(buffered, format="JPEG")
+            img.save(buffered, format="JPEG", quality=85)
             encoded_string = base64.b64encode(buffered.getvalue()).decode()
             fotos_html += f'''
-                <div style="display: inline-block; margin: 10px; text-align: center; border: 1px solid #ddd; padding: 5px; border-radius: 5px;">
-                    <img src="data:image/jpeg;base64,{encoded_string}" style="width:200px; height:150px; object-fit: cover;">
+                <div style="display: inline-block; margin: 10px; text-align: center; border: 1px solid #ddd; padding: 5px; border-radius: 5px; background: #fff;">
+                    <img src="data:image/jpeg;base64,{encoded_string}" style="width:220px; height:160px; object-fit: cover; border-radius: 3px;">
                 </div>'''
-        except:
+        except Exception:
             continue
 
-    # Estructura del documento
+    # Estructura del documento profesional
     html = f"""
     <!DOCTYPE html>
     <html lang="es">
     <head>
         <meta charset="UTF-8">
         <style>
-            body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 40px; color: #333; line-height: 1.6; background-color: #f4f4f4; }}
-            .container {{ background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.1); max-width: 900px; margin: auto; }}
-            .header {{ border-bottom: 4px solid #2e7d32; padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }}
-            h1 {{ color: #2e7d32; margin: 0; font-size: 24px; }}
-            .ficha-tecnica {{ display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #e8f5e9; padding: 15px; border-radius: 5px; }}
-            .section-title {{ color: #2e7d32; border-left: 5px solid #2e7d32; padding-left: 10px; margin-top: 30px; font-weight: bold; text-transform: uppercase; }}
-            .resultado-ia {{ background: #ffffff; border: 1px solid #eee; padding: 20px; border-radius: 5px; white-space: pre-line; }}
-            .fotos-grid {{ text-align: center; margin-top: 20px; }}
-            .footer {{ margin-top: 40px; font-size: 10px; color: #999; text-align: center; border-top: 1px solid #eee; padding-top: 10px; }}
-            table {{ width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }}
-            th {{ background-color: #2e7d32; color: white; padding: 10px; text-align: left; }}
-            td {{ padding: 8px; border-bottom: 1px solid #eee; }}
+            body {{ font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 40px; color: #333; line-height: 1.6; background-color: #f0f2f0; }}
+            .container {{ background: #fff; padding: 35px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 950px; margin: auto; border-top: 8px solid #2e7d32; }}
+            .header {{ border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; }}
+            h1 {{ color: #2e7d32; margin: 0; font-size: 26px; letter-spacing: -1px; }}
+            .ficha-tecnica {{ display: grid; grid-template-columns: 1fr 1fr; gap: 15px; background: #f1f8e9; padding: 20px; border-radius: 8px; border: 1px solid #dcedc8; }}
+            .section-title {{ color: #1b5e20; border-bottom: 2px solid #a5d6a7; padding-bottom: 5px; margin-top: 35px; font-weight: bold; text-transform: uppercase; font-size: 16px; }}
+            .resultado-ia {{ background: #ffffff; padding: 10px; border-radius: 5px; font-size: 14px; color: #444; overflow-x: auto; }}
+            .fotos-grid {{ text-align: center; margin-top: 25px; background: #f9f9f9; padding: 15px; border-radius: 8px; }}
+            .footer {{ margin-top: 50px; font-size: 11px; color: #777; text-align: center; border-top: 1px solid #eee; padding-top: 15px; font-style: italic; }}
+            table {{ width: 100%; border-collapse: collapse; margin-top: 15px; }}
+            th {{ background-color: #2e7d32; color: white; padding: 12px; text-align: left; font-size: 13px; }}
+            td {{ padding: 10px; border-bottom: 1px solid #eee; font-size: 13px; }}
+            pre {{ white-space: pre-wrap; word-wrap: break-word; font-family: inherit; }}
         </style>
     </head>
     <body>
         <div class="container">
             <div class="header">
-                <h1>INFORME DE PERITAJE PROFESIONAL</h1>
-                <span style="color: #666;">Agrícola Noroeste</span>
+                <div>
+                    <h1>INFORME DE PERITAJE TÉCNICO</h1>
+                    <div style="color: #2e7d32; font-weight: bold;">Agrícola Noroeste</div>
+                </div>
+                <div style="text-align: right; font-size: 13px; color: #666;">
+                    <strong>ID Informe:</strong> AN-{int(time.time())}<br>
+                    <strong>Fecha:</strong> {time.strftime("%d/%m/%Y")}
+                </div>
             </div>
             
             <div class="ficha-tecnica">
-                <div><strong>Modelo:</strong> {marca} {modelo}</div>
-                <div><strong>Año de fabricación:</strong> {anio}</div>
-                <div><strong>Horas de uso:</strong> {horas} Horas</div>
-                <div><strong>Fecha tasación:</strong> {time.strftime("%d/%m/%Y")}</div>
+                <div><strong>🚜 Marca y Modelo:</strong> {marca} {modelo}</div>
+                <div><strong>📅 Año de Fab.:</strong> {anio}</div>
+                <div><strong>⏳ Horas de uso:</strong> {horas} Horas</div>
+                <div><strong>📍 Ubicación:</strong> Zamora (Sede Central)</div>
             </div>
 
-            <div class="section-title">Incidencias y Extras Declarados</div>
-            <p style="font-size: 14px;">{observaciones if observaciones else "Sin extras adicionales declarados."}</p>
+            <div class="section-title">Equipamiento e Incidencias (Declarado)</div>
+            <p style="font-size: 14px; color: #555; padding: 0 10px;">{observaciones if observaciones else "No se han declarado extras adicionales."}</p>
 
-            <div class="section-title">Análisis Estadístico y Valoración IA</div>
-            <div class="resultado-ia">{resultado_ia}</div>
+            <div class="section-title">Estudio Estadístico de Mercado y Valoración IA</div>
+            <div class="resultado-ia">
+                <pre>{resultado_ia}</pre>
+            </div>
 
-            <div class="section-title">Evidencias Fotográficas del Peritaje</div>
+            <div class="section-title">Evidencia Fotográfica de la Inspección</div>
             <div class="fotos-grid">
                 {fotos_html}
             </div>
 
             <div class="footer">
-                Documento generado mediante Inteligencia Artificial Gemini 2.5 Flash para uso exclusivo de Agrícola Noroeste. 
-                Los valores son estimaciones estadísticas basadas en el mercado europeo actual.
+                Este informe es una estimación estadística generada mediante IA (Gemini 2.5 Flash). 
+                Agrícola Noroeste no se hace responsable de variaciones de mercado post-emisión.
             </div>
         </div>
     </body>
@@ -110,7 +123,7 @@ with st.container():
         horas = st.number_input("Horas de uso*", min_value=0)
 
     observaciones = st.text_area("Incidencias y Extras (Campo Crítico)", 
-                                 placeholder="Describa aquí pala, tripuntal, estado de ruedas...")
+                                 placeholder="Describa aquí: Pala, tripuntal, estado de ruedas, GPS...")
 
 st.divider()
 
@@ -127,48 +140,47 @@ st.divider()
 
 if st.button("🚀 REALIZAR TASACIÓN PROFESIONAL"):
     if not marca or not modelo or not anio or not horas:
-        st.warning("⚠️ Complete todos los campos marcados con *.")
+        st.warning("⚠️ Complete todos los campos obligatorios.")
     elif len(fotos_subidas) < 5:
-        st.warning("⚠️ Se requieren al menos 5 fotografías para validar el estado.")
+        st.warning("⚠️ Se requieren al menos 5 fotografías para validar la unidad.")
     else:
         try:
+            # Usamos el modelo configurado
             model = genai.GenerativeModel('gemini-2.5-flash')
             
             prompt_instrucciones = f"""
             ### ROL: EXPERTO TASADOR DE MAQUINARIA AGRÍCOLA (AGRÍCOLA NOROESTE)
-            Realiza un informe técnico-estadístico para un {marca} {modelo} del año {anio} con {horas} HORAS.
+            Realiza un informe técnico-estadístico detallado para un {marca} {modelo} del año {anio} con {horas} HORAS.
             
-            INSTRUCCIONES:
-            1. Analiza las fotos para detectar extras (Tripuntal, Pala, GPS) o daños.
-            2. Simula una muestra de 15 unidades de Agriaffaires, Tractorpool y E-Farm con +/- 1000 horas.
-            3. Prohibido usar el término 'kilómetros'. Siempre usa 'Horas'.
-            4. Extras declarados por el usuario: {observaciones}
+            INSTRUCCIONES CRÍTICAS:
+            1. Analiza las fotos para confirmar anclajes, estado de neumáticos y limpieza.
+            2. Busca y genera una tabla comparativa de 15 unidades en Agriaffaires, Tractorpool y E-Farm con +/- 1000 horas.
+            3. PROHIBIDO usar 'kilómetros'. Siempre usa 'Horas'.
+            4. Extras declarados: {observaciones}
 
-            FORMATO: Devuelve el texto estructurado con tablas Markdown.
+            ESTRUCTURA DE SALIDA:
+            - Resumen del estado visual.
+            - Tabla de mercado europeo.
+            - Valoración final (Precio Aterrizaje y Precio Compra Agrícola Noroeste).
             """
 
-            with st.spinner('🔍 Generando informe pericial y analizando mercado...'):
+            with st.spinner('🔍 Analizando fotos y rastreando precios en portales europeos...'):
                 paquete = [prompt_instrucciones]
                 for f in fotos_subidas:
-                    paquete.append(Image.open(f))
+                    # Cargamos las imágenes para la IA
+                    img_ia = Image.open(f)
+                    paquete.append(img_ia)
                 
                 response = model.generate_content(paquete)
             
-            st.success("✅ Informe Generado")
+            st.success("✅ Informe Generado con Éxito")
             
-            # Mostrar resultado en la App
-            with st.expander("👀 Previsualizar Informe de la IA", expanded=True):
+            # Previsualización en Streamlit
+            with st.expander("👀 Ver Informe Preliminar"):
                 st.markdown(response.text)
             
-            # Generar y ofrecer descarga de HTML
+            # Generación del archivo HTML con los datos corregidos
             informe_html = generar_html_informe(marca, modelo, anio, horas, observaciones, response.text, fotos_subidas)
             
-            st.download_button(
-                label="📥 Descargar Informe Oficial (HTML con Fotos)",
-                data=informe_html,
-                file_name=f"Peritaje_{marca}_{modelo}.html",
-                mime="text/html"
-            )
-            
-        except Exception as e:
-            st.error(f"❌ Error en el proceso: {e}")
+            # Botón de descarga
+            st.
