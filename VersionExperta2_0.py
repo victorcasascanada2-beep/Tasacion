@@ -183,4 +183,12 @@ if st.button("🚀 REALIZAR TASACIÓN PROFESIONAL"):
             informe_html = generar_html_informe(marca, modelo, anio, horas, observaciones, response.text, fotos_subidas)
             
             # Botón de descarga
-            st.
+            st.download_button(
+                label="📥 Descargar Informe Oficial HTML (Con Fotos)",
+                data=informe_html,
+                file_name=f"Informe_Tasacion_{marca}_{modelo}_{time.strftime('%Y%m%d')}.html",
+                mime="text/html"
+            )
+            
+        except Exception as e:
+            st.error(f"❌ Error en el proceso: {e}")
