@@ -21,9 +21,6 @@ st.markdown("""
 # 1. Configuración de la API (Asegúrate de tener la KEY en Secrets de Streamlit)
 try:
     genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
-    # Esto sacará la lista real de modelos que tu cuenta tiene permitidos ahora mismo
-disponibles = [m.name for m in genai.list_models()]
-st.write("Modelos que Google te deja usar ahora mismo:", disponibles)
 except Exception as e:
     st.error("Configuración de API no encontrada. Verifica los Secrets.")
 
@@ -149,7 +146,7 @@ if st.button("🚀 REALIZAR TASACIÓN PROFESIONAL"):
     else:
         try:
             # Usamos el modelo configurado
-            model = genai.GenerativeModel('gemini-3.0-flash')
+            model = genai.GenerativeModel('gemini-1.5-flash-002')
             
             prompt_instrucciones = f"""
             ### ROL: EXPERTO TASADOR DE MAQUINARIA AGRÍCOLA (AGRÍCOLA NOROESTE)
