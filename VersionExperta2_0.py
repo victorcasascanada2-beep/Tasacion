@@ -21,6 +21,9 @@ st.markdown("""
 # 1. Configuración de la API (Asegúrate de tener la KEY en Secrets de Streamlit)
 try:
     genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
+    # Esto sacará la lista real de modelos que tu cuenta tiene permitidos ahora mismo
+disponibles = [m.name for m in genai.list_models()]
+st.write("Modelos que Google te deja usar ahora mismo:", disponibles)
 except Exception as e:
     st.error("Configuración de API no encontrada. Verifica los Secrets.")
 
