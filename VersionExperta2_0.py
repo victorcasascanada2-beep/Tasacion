@@ -146,7 +146,7 @@ if st.button("🚀 REALIZAR TASACIÓN PROFESIONAL"):
     else:
         try:
             # Usamos el modelo configurado
-            model = genai.GenerativeModel('gemini-1.5-flash-latest')
+            model = genai.GenerativeModel('gemini-3.0-flash')
             
             prompt_instrucciones = f"""
             ### ROL: EXPERTO TASADOR DE MAQUINARIA AGRÍCOLA (AGRÍCOLA NOROESTE)
